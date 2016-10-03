@@ -1034,8 +1034,8 @@ struct fimc_is_module_enum *active_sensor, int position)
 
 	cal_ptr = (char *)(device->imemory.kvaddr + start_addr);
 
-	info("CAL DATA : MAP ver : %c%c%c%c\n", cal_buf[0x30], cal_buf[0x31],
-		cal_buf[0x32], cal_buf[0x33]);
+	info("CAL DATA : MAP ver : %c%c%c%c\n", cal_buf[0x40], cal_buf[0x41],
+		cal_buf[0x42], cal_buf[0x43]);
 
 	info("Camera : Front Sensor Version : 0x%x\n", cal_buf[0x5C]);
 

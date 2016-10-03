@@ -348,27 +348,30 @@ static int make_sock(union mysockaddr *addr, int type, int dienow)
   int fd, rc, opt = 1;
   
   if ((fd = socket(family, type, 0)) == -1)
-    {
-      int port;
+  {
+    int port;
 
-      /* No error if the kernel just doesn't support this IP flavour */
-      if (errno == EPROTONOSUPPORT ||
-	  errno == EAFNOSUPPORT ||
-	  errno == EINVAL)
-	return -1;
-      
-    err:
-      if (dienow)
-	{
-	  port = prettyprint_addr(addr, daemon->namebuff);
-	  if (!option_bool(OPT_NOWILD))
-	    sprintf(daemon->namebuff, "port %d", port);
-	  die(_("failed to create listening socket for %s: %s"), 
-	      daemon->namebuff, EC_BADNET);
-	
-	}
+    /* No error if the kernel just doesn't support this IP flavour */
+    if (errno == EPROTONOSUPPORT ||
+	    errno == EAFNOSUPPORT ||
+	    errno == EINVAL)
       return -1;
-    }	
+      
+err:
+    if (dienow)
+    {
+      port = prettyprint_addr(addr, daemon->namebuff);
+      if (!option_bool(OPT_NOWILD))
+        sprintf(daemon->namebuff, "port %d", port);
+      die(_("failed to create listening socket for %s: %s"), 
+      daemon->namebuff, EC_BADNET);
+    }
+
+    if(fd != -1)
+      close(fd);
+
+    return -1;
+  }	
 
   if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1 || !fix_fd(fd))
     goto err;

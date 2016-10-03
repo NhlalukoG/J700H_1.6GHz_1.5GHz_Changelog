@@ -315,7 +315,7 @@ void lease_update_file(time_t now)
 
       if ((event = periodic_slaac(now, leases)) != 0)
 	{
-	  if (next_event == 0 || difftime(next_event, event) > 0.0)
+	  if (difftime(next_event, event) > 0.0)
 	    next_event = event;
 	}
 

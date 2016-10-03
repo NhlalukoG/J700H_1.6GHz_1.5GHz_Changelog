@@ -902,7 +902,7 @@ size_t dhcp_reply(struct dhcp_context *context, char *iface_name, int int_index,
           sprintf(rand_addr,"192.168.%d.129",rand_cclass);
           sprintf(rand_addr_default,"192.168.%d.0/24",rand_cclass);
           change_ifaceaddr(iface_name,inet_addr(rand_addr));
-          add_route_local(rand_addr_default,iface_name);
+        add_route_local(rand_addr_default,iface_name);
       }
 //> RNTFIX : Mirror Link
       if (!(opt = option_find(mess, sz, OPTION_SERVER_IDENTIFIER, INADDRSZ)) ||
@@ -2118,7 +2118,7 @@ static int add_route_local(char *addr, char *iface){
 
     asprintf(&cmd, "%s route add  %s dev %s table local_network", "system/bin/ip",
             addr,iface);
-    my_syslog(MS_DHCP | LOG_INFO,"modify_from_route : %s",cmd);
+  my_syslog(MS_DHCP | LOG_INFO,"modify_from_route : %s",cmd);
     if (run_ip_cmd(cmd) < 0) {
         my_syslog(MS_DHCP | LOG_INFO, "failed to run_ip_cmd");
         return -1;
@@ -2500,3 +2500,10 @@ static void do_options(struct dhcp_context *context,
 }
 
 #endif
+  
+
+  
+  
+
+
+  

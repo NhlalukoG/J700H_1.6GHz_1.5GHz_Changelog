@@ -383,8 +383,20 @@ static int forward_query(int udpfd, union mysockaddr *udpaddr,
 			setsockopt(fd, SOL_SOCKET, SO_MARK, &mark, sizeof(unsigned int));
 		    }
 #endif
+
+#ifdef __ANDROID__
+		  // Mark the socket so it goes out on the correct network. Note
+		  // that we never clear the mark, only re-set it the next time we
+		  // allocate a new random fd. This is because we buffer DNS
+		  // queries (in daemon->srv_save, daemon->packet_len) and socket
+		  // file descriptors (in daemon->rfd_save) with the expectation of
+		  // being able to use them again.
+		  //
+		  // Server fds are marked separately in allocate_sfd.
+		  setsockopt(fd, SOL_SOCKET, SO_MARK, &start->mark, sizeof(start->mark));
+#endif
 		}
-	      
+
 	      if (sendto(fd, (char *)header, plen, 0,
 			 &start->addr.sa,
 			 sa_len(&start->addr)) == -1)

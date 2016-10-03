@@ -14,7 +14,12 @@
 #define	ERR_WRONG_NR_PARAMETER -1
 #define	ERR_NO_SUCH_OPERATION -2
 
-#define	SYSTEM_DEV "/dev/block/bootdevice/by-name/system"
+//#define   SYSTEM_DEV "/dev/block/platform/msm_sdcc.1/by-name/system"
+#ifdef EXYNOS_7580
+static const char * SYSTEM_DEV = "/dev/block/platform/13540000.dwmmc0/by-name/SYSTEM";
+#else
+static const char * SYSTEM_DEV = "/dev/block/platform/15540000.dwmmc0/by-name/SYSTEM";
+#endif
 #define	TARGET_DEV SYSTEM_DEV
 #define	TMP_HASH_FILE "/tmp/dmverity"
 #define TMP_HASH_TABLE "/tmp/dmverity_table"
@@ -27,7 +32,11 @@
 #define	SHA1 "sha1"
 #define	SHA256 "sha256"
 #define	MD5 "md5"
+#ifdef USE_SHA1
+#define HASH_NAME SHA1
+#else
 #define HASH_NAME MD5
+#endif
 
 struct verity_meta_header {
 	unsigned magic_number;
@@ -147,34 +156,35 @@ static int verify_verity_header(const char *data_device, const int meta_version,
 	meta_start = (data_blocks * block_size + block_size - 1) / block_size;
 	meta_off = meta_start * block_size;
 
+
 	fd = open(data_device, O_RDONLY);
 	if (fd < 0){
 		fprintf(stderr, "error opening device\n");
 		return -1;
 	}
 	if (lseek64(fd, meta_off, SEEK_SET) < 0) {
-		fprintf(stderr, "Error seeking to meta data\n");
+		fprintf(stderr, "Error seeking to meta data");
 		goto exit_open;
 	}
 
 	if (sizeof(struct verity_meta_header)
 	        != read(fd, &header, sizeof(struct verity_meta_header))) {
-		fprintf(stderr, "Error reading meta data\n");
+		fprintf(stderr, "Error reading meta data");
 		goto exit_open;
 	}
 
 	if (header.protocol_version != meta_version) {
-		fprintf(stderr, "version mismatch\n");
+		fprintf(stderr, "version mismatch");
 		goto exit_open;
 	}
 
 	if (header.magic_number != VERITY_METADATA_MAGIC_NUMBER) {
-		fprintf(stderr, "wrong magic number\n");
+		fprintf(stderr, "wrong magic number");
 		goto exit_open;
 	}
 
 	if (header.table_length <= 0) {
-		fprintf(stderr, "invalid table length\n");
+		fprintf(stderr, "invalid table length");
 		goto exit_open;
 	}
 
@@ -186,7 +196,7 @@ static int verify_verity_header(const char *data_device, const int meta_version,
 	table[header.table_length] = 0;
 
 	if ((ssize_t)(header.table_length) != read(fd, table, header.table_length)) {
-		printf("invalid table length\n");
+		printf("invalid table length");
 		free(table);
 		goto exit_open;
 	}
@@ -227,7 +237,6 @@ static int verify_verity(const int meta_version, const int dm_verity_version,
 	int fd = -1;
 	char *table;
 	int ret;
-
 	printf("verify_verity\n");
 	fflush(stdout);
 
@@ -238,8 +247,7 @@ static int verify_verity(const int meta_version, const int dm_verity_version,
 	}
 
 	printf("table 1: %s\n", table);
-	fflush(stdout);
-
+    fflush(stdout);
     //
     /////////////now verify hash tree
     char * version_str = strtok(table, " ");
@@ -388,7 +396,11 @@ static int rehash_verity(const int meta_version, const int dm_verity_version,
     int i;
     char * table = NULL, *p;
     const long data_blocks = part_size / DMVERITY_BLOCK_SIZE;
+#ifdef USE_SHA1
+    const int digest_size = 20;//sha1
+#else
     const int digest_size = 16;//md5
+#endif
     char salt[digest_size];
     char root_hash[digest_size];
     const loff_t hash_start = (part_size + DMVERITY_META_SIZE)/DMVERITY_BLOCK_SIZE;

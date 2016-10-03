@@ -6,11 +6,11 @@ LOCAL_MODULE_TAGS := optional
 LOCAL_PRELINK_MODULE:=false
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)\
-	$(LOCAL_PATH)/../../include/libexif/\
-	$(LOCAL_PATH)/../../include/libexif/canon/\
-	$(LOCAL_PATH)/../../include/libexif/fuji/\
-	$(LOCAL_PATH)/../../include/libexif/olympus/\
-	$(LOCAL_PATH)/../../include/libexif/pentax/
+	$(LOCAL_PATH)/libexif/\
+	$(LOCAL_PATH)/libexif/canon/\
+	$(LOCAL_PATH)/libexif/fuji/\
+	$(LOCAL_PATH)/libexif/olympus/\
+	$(LOCAL_PATH)/libexif/pentax/
 
 LOCAL_SRC_FILES:=\
 	canon/exif-mnote-data-canon.c\
@@ -41,7 +41,6 @@ LOCAL_SRC_FILES:=\
 #LOCAL_CFLAGS:=-O2 -g
 #LOCAL_CFLAGS+=-DHAVE_CONFIG_H -D_U_="__attribute__((unused))" -Dlinux -D__GLIBC__ -D_GNU_SOURCE
 
-LOCAL_CFLAGS += -Wno-enum-compare
 
 LOCAL_MODULE:= libexifa
 

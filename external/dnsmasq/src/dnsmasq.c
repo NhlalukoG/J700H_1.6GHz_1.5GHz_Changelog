@@ -191,12 +191,6 @@ int main (int argc, char **argv)
   netlink_init();
 #endif
 
-#ifdef HAVE_DHCP6
-  /* after netlink_init */
-  if (daemon->ra_contexts || daemon->dhcp6)
-    join_multicast();
-#endif
-
 #ifdef HAVE_DHCP
   /* after netlink_init */
   if (daemon->dhcp || daemon->dhcp6)
@@ -231,7 +225,13 @@ int main (int argc, char **argv)
     }
   else 
     create_wildcard_listeners();
-  
+
+#ifdef HAVE_DHCP6
+  /* after enumerate_interfaces()  */
+  if (daemon->ra_contexts || daemon->dhcp6)
+    join_multicast();
+#endif
+
   if (daemon->port != 0)
     cache_init();
     
@@ -958,7 +958,7 @@ void send_event(int fd, int event, int data, char *msg)
    to describe fatal errors. */
 static int read_event(int fd, struct event_desc *evp, char **msg)
 {
-  char *buf;
+  char *buf = NULL;
 
   if (!read_write(fd, (unsigned char *)evp, sizeof(struct event_desc), 1))
     return 0;
@@ -968,10 +968,14 @@ static int read_event(int fd, struct event_desc *evp, char **msg)
   if (evp->msg_sz != 0 && 
       (buf = malloc(evp->msg_sz + 1)) &&
       read_write(fd, (unsigned char *)buf, evp->msg_sz, 1))
-    {
-      buf[evp->msg_sz] = 0;
-      *msg = buf;
-    }
+  {
+    buf[evp->msg_sz] = 0;
+    *msg = buf;
+  }
+  else if(buf != NULL)
+  {
+    free(buf);
+  }
 
   return 1;
 }
@@ -1284,6 +1288,16 @@ static int check_android_listeners(fd_set *set) {
                 }
 #endif
 // ] for ipv6 tethering
+            } else if (!strcmp(cmd,"join_multicast")) {
+#ifdef HAVE_DHCP6
+                if(params != NULL) {
+                    my_syslog(MS_DHCP| LOG_INFO, "join multicast:%s", params);
+                    iface_join_multicast(params);
+                } else {
+                    my_syslog(LOG_ERR, _("Malformatted msg '%s'"), current_cmd);
+                    retcode = -1;
+                }
+#endif
             } else {
                 my_syslog(LOG_ERR, _("Unknown cmd '%s'"), cmd);
                 retcode = -1;

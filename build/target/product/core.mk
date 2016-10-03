@@ -22,23 +22,54 @@
 PRODUCT_PACKAGES += \
     BasicDreams \
     Browser \
+    Calculator \
+    Calendar \
+    CalendarProvider \
+    CaptivePortalLogin \
+    CertInstaller \
     Contacts \
+    DeskClock \
     DocumentsUI \
     DownloadProviderUi \
+    Email \
+    Exchange2 \
     ExternalStorageProvider \
+    FusedLocation \
+    InputDevices \
     KeyChain \
+    Keyguard \
+    LatinIME \
+    Launcher2 \
+    ManagedProvisioning \
     PicoTts \
     PacProcessor \
+    libpac \
+    PrintSpooler \
     ProxyHandler \
+    QuickSearchBox \
+    Settings \
     SharedStorageBackup \
+    Telecom \
+    TeleService \
     VpnDialogs \
-    libasound \
+    MmsService
+
+# e2fsprog
+PRODUCT_PACKAGES += \
+    e2fsck \
+    blkid \
+    resize2fs
+
+# libexifa, libjpega, libexif
+PRODUCT_PACKAGES += \
+    libexif \
     libexifa \
     libjpega \
-    e2fsck \
-    core-junit \
-    libwebcore \
-    libkeyutils \
-    blkid
+
+
+# KeyUtils
+PRODUCT_PACKAGES += \
+    libkeyutils
+
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/core_base.mk)

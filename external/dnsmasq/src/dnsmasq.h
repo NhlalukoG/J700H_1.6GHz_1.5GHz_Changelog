@@ -1148,6 +1148,7 @@ void bindtodevice(int fd);
 #  ifdef HAVE_DHCP6
 void display_opts6(void);
 void join_multicast(void);
+void iface_join_multicast(const char* params);
 #  endif
 #endif
 

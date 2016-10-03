@@ -22,8 +22,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include <signal.h>
-#include <sys/types.h>
+
 #include <cutils/properties.h>
 
 static const char DAEMON_NAME[]        = "dhcpcd";
@@ -94,8 +93,7 @@ static int fill_ip_info(const char *interface,
                      uint32_t *lease,
                      char *vendorInfo,
                      char *domain,
-                     char *mtu,
-                     uint32_t *roaming)
+                     char *mtu)
 {
     char prop_name[PROPERTY_KEY_MAX];
     char prop_value[PROPERTY_VALUE_MAX];
@@ -165,10 +163,6 @@ static int fill_ip_info(const char *interface,
             p2p_interface);
     property_get(prop_name, mtu, NULL);
 
-    snprintf(prop_name, sizeof(prop_name), "%s.%s.roaming", DHCP_PROP_NAME_PREFIX, p2p_interface);
-    if (property_get(prop_name, prop_value, NULL)) {
-        *roaming = atol(prop_value);
-    }
     return 0;
 }
 
@@ -198,8 +192,7 @@ int dhcp_do_request(const char *interface,
                     uint32_t *lease,
                     char *vendorInfo,
                     char *domain,
-                    char *mtu,
-                    uint32_t *roaming)
+                    char *mtu)
 {
     char result_prop_name[PROPERTY_KEY_MAX];
     char daemon_prop_name[PROPERTY_KEY_MAX];
@@ -209,55 +202,24 @@ int dhcp_do_request(const char *interface,
     const char *desired_status = "running";
     /* Interface name after converting p2p0-p2p0-X to p2p to reuse system properties */
     char p2p_interface[MAX_INTERFACE_LENGTH];
-#ifdef SAMSUNG_OXYGEN_NETWORK
-    int isIbss = 0;
-#endif
 
     get_p2p_interface_replacement(interface, p2p_interface);
-
-#ifdef SAMSUNG_OXYGEN_NETWORK
-    if(strncmp(interface, "ibss", 4) == 0) {
-        isIbss = 1;
-        strncpy(p2p_interface, "wlan0", MAX_INTERFACE_LENGTH);
-    }
-#endif
 
     snprintf(result_prop_name, sizeof(result_prop_name), "%s.%s.result",
             DHCP_PROP_NAME_PREFIX,
             p2p_interface);
 
-#ifdef SAMSUNG_OXYGEN_NETWORK
-    if(isIbss > 0) {
-        snprintf(daemon_prop_name, sizeof(daemon_prop_name), "%s_ibss",
-                DAEMON_PROP_NAME);
-    } else {
-        snprintf(daemon_prop_name, sizeof(daemon_prop_name), "%s_%s",
-                DAEMON_PROP_NAME,
-                p2p_interface);
-    }
-#else
     snprintf(daemon_prop_name, sizeof(daemon_prop_name), "%s_%s",
             DAEMON_PROP_NAME,
             p2p_interface);
-#endif
 
     /* Erase any previous setting of the dhcp result property */
     property_set(result_prop_name, "");
 
     /* Start the daemon and wait until it's ready */
     if (property_get(HOSTNAME_PROP_NAME, prop_value, NULL) && (prop_value[0] != '\0'))
-#ifdef SAMSUNG_OXYGEN_NETWORK
-    {
-        if(isIbss > 0) {
-            snprintf(daemon_cmd, sizeof(daemon_cmd), "%s_ibss:-f %s -h %s wlan0", DAEMON_NAME,
-                      DHCP_CONFIG_PATH, prop_value);
-        } else
-#endif
         snprintf(daemon_cmd, sizeof(daemon_cmd), "%s_%s:-f %s -h %s %s", DAEMON_NAME,
                  p2p_interface, DHCP_CONFIG_PATH, prop_value, interface);
-#ifdef SAMSUNG_OXYGEN_NETWORK
-    }
-#endif
     else
         snprintf(daemon_cmd, sizeof(daemon_cmd), "%s_%s:-f %s %s", DAEMON_NAME,
                  p2p_interface, DHCP_CONFIG_PATH, interface);
@@ -281,22 +243,10 @@ int dhcp_do_request(const char *interface,
     }
     if (strcmp(prop_value, "ok") == 0) {
         char dns_prop_name[PROPERTY_KEY_MAX];
-#ifdef SAMSUNG_OXYGEN_NETWORK
-        if (isIbss > 0) {
-            const char *ibssInterface = "wlan0";
-            if (fill_ip_info(ibssInterface, ipaddr, gateway, prefixLength,
-                    dns, server, lease, vendorInfo, domain, mtu, roaming) == -1) {
-                return -1;
-            }
-        } else {
-#endif
         if (fill_ip_info(interface, ipaddr, gateway, prefixLength, dns,
-                server, lease, vendorInfo, domain, mtu, roaming) == -1) {
+                server, lease, vendorInfo, domain, mtu) == -1) {
             return -1;
         }
-#ifdef SAMSUNG_OXYGEN_NETWORK
-        }
-#endif
         return 0;
     } else {
         snprintf(errmsg, sizeof(errmsg), "DHCP result was %s", prop_value);
@@ -358,15 +308,8 @@ int dhcp_release_lease(const char *interface)
 
     snprintf(daemon_cmd, sizeof(daemon_cmd), "%s_%s", DAEMON_NAME, p2p_interface);
 
-    pid_t pid;
-    char pid_property_name[PROPERTY_KEY_MAX];
-    char pid_property_value[PROPERTY_VALUE_MAX];
-
-    snprintf(pid_property_name, sizeof(pid_property_name), "dhcp.%s.pid", interface);
-    property_get(pid_property_name, pid_property_value, NULL);
-    pid = atoi(pid_property_value);
-    kill(pid, SIGHUP);
-
+    /* Stop the daemon and wait until it's reported to be stopped */
+    property_set(ctrl_prop, daemon_cmd);
     if (wait_for_property(daemon_prop_name, desired_status, 5) < 0) {
         return -1;
     }
@@ -393,8 +336,7 @@ int dhcp_do_request_renew(const char *interface,
                     uint32_t *lease,
                     char *vendorInfo,
                     char *domain,
-                    char *mtu,
-                    uint32_t *roaming)
+                    char *mtu)
 {
     char result_prop_name[PROPERTY_KEY_MAX];
     char prop_value[PROPERTY_VALUE_MAX] = {'\0'};
@@ -431,7 +373,7 @@ int dhcp_do_request_renew(const char *interface,
     }
     if (strcmp(prop_value, "ok") == 0) {
         return fill_ip_info(interface, ipaddr, gateway, prefixLength, dns,
-                server, lease, vendorInfo, domain, mtu, roaming);
+                server, lease, vendorInfo, domain, mtu);
     } else {
         snprintf(errmsg, sizeof(errmsg), "DHCP Renew result was %s", prop_value);
         return -1;

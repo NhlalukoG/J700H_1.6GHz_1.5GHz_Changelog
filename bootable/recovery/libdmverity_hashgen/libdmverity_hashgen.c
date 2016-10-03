@@ -43,7 +43,7 @@
 #include "mincrypt/rsa.h"
 #include "mincrypt/sha256.h"
 #include "mincrypt/sha.h"
-#include "openssl/md5.h"
+#include <openssl/md5.h>
 #include "libdmverity_hashgen.h"
 
 #include <pthread.h>
@@ -193,14 +193,14 @@ static void* hash_create_job(void *args){
 	}
   
     if (mult_overflow(&seek_rd, data_block_offset, data_block_size) ) {
-        printf("Device offset overflow 1 : %lld, %d \n", data_block_offset, data_block_size);
+        printf("Device offset overflow 1 : %lld, %d \n", (long long int)data_block_offset, (int)data_block_size);
         free(data_buffer);
 		close(fd); 
 		exit(EXIT_FAILURE); 
     }
 
     if (lseek64(fd, seek_rd, SEEK_SET) < 0) {
-        printf("Cannot seek to requested position in data device in thread %d, offset %ld, seek_rd %lld\n", tinfo->thread_num,  (long)data_block_offset, seek_rd);
+        printf("Cannot seek to requested position in data device in thread %d, offset %ld, seek_rd %lld\n", tinfo->thread_num,  (long)data_block_offset, (long long int)seek_rd);
         free(data_buffer);
 		close(fd); 
 		exit(EXIT_FAILURE); 
@@ -260,8 +260,8 @@ static void* hash_create_job(void *args){
  /*4 threads is the maximum thread number we can use for now, otherwise integer overflow in fseeko, the seek will fail. And we don't have 64bit support fseeko here */
  #define NTHREADS 4
 	 char left_block[hash_block_size];
-	 size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
-	 size_t digest_size_full = 1 << get_bits_up(digest_size);
+	 size_t hash_per_block = ((size_t)1 << get_bits_down(hash_block_size / digest_size));
+	 size_t digest_size_full = ((size_t)1 << get_bits_up(digest_size));
 	 loff_t blocks_to_write = (data_block_count  + hash_per_block - 1) / hash_per_block;
 	 loff_t seek_wr;
 	 size_t left_bytes;
@@ -282,7 +282,7 @@ static void* hash_create_job(void *args){
 	 buffer_size =  data_block_count * digest_size * sizeof(char);
 	 hash_buffer = (char*) malloc(buffer_size);
 	 if(NULL == hash_buffer) {
-		 printf( "Cannot allocate hash buffer for %lld blocks * %zu bytes\n", data_block_count, digest_size); 
+		 printf( "Cannot allocate hash buffer for %lld blocks * %zu bytes\n", (long long int)data_block_count, digest_size); 
 		 return -1 ; 
 	 }
 
@@ -338,7 +338,7 @@ static void* hash_create_job(void *args){
 
 	 /*3: write hash buffer back to disk */ 
 	 if( mult_overflow(&seek_wr, hash_block_offset, hash_block_size)) {
- 		 printf("Device offset overflow : %lld, %d\n", hash_block_offset, hash_block_size);
+ 		 printf("Device offset overflow : %lld, %d\n", (long long int)hash_block_offset, (int)hash_block_size);
 		 return -EINVAL;
 	 }
 
@@ -409,8 +409,8 @@ static void* hash_create_job(void *args){
 	 char left_block[hash_block_size];
 	 char data_buffer[data_block_size];
 	 //  char read_digest[digest_size];
-	 size_t hash_per_block = 1 << get_bits_down(hash_block_size / digest_size);
-	 size_t digest_size_full = 1 << get_bits_up(digest_size);
+	 size_t hash_per_block = ((size_t)1 << get_bits_down(hash_block_size / digest_size));
+	 size_t digest_size_full = ((size_t)1 << get_bits_up(digest_size));
 	 loff_t blocks_to_write = (blocks + hash_per_block - 1) / hash_per_block;
 	 loff_t seek_rd, seek_wr;
 	 size_t left_bytes;
@@ -419,13 +419,13 @@ static void* hash_create_job(void *args){
 
  #ifdef VERBOSE
 	 char hex_hash[128];
-	 printf("create_hash: %lld, %lld, %lld\n", data_block, hash_block, blocks);
+	 printf("create_hash: %lld, %lld, %lld\n", (long long int)data_block, (long long int)hash_block, (long long int)blocks);
 	 memset(hex_hash, 0, 128);
  #endif
 
 	 if (mult_overflow(&seek_rd, data_block, data_block_size)
 		 || mult_overflow(&seek_wr, hash_block, hash_block_size)) {
-		 printf("Device offset overflow 1 : %lld, %d, %lld, %d\n", data_block, data_block_size, hash_block, hash_block_size);
+		 printf("Device offset overflow 1 : %lld, %d, %lld, %d\n", (long long int)data_block, (int)data_block_size, (long long int)hash_block, (int)hash_block_size);
 		 return -EINVAL;
 	 }
 
@@ -459,6 +459,7 @@ static void* hash_create_job(void *args){
 				memset(calculated_digest, 1, digest_size);
 				blk_zero_handle = 1;  
 			 }
+
 			 if (!wr)
 				 break;
 
@@ -515,7 +516,7 @@ static void* hash_create_job(void *args){
 	 data_file_blocks = data_blocks;
 
 	 if (mult_overflow(&data_device_size, data_blocks, data_block_size)) {
-		 printf("Device offset overflow 2 : %lld, %d\n", data_blocks, data_block_size);
+		 printf("Device offset overflow 2 : %lld, %d\n", (long long int)data_blocks, (int)data_block_size);
 		 return -EINVAL;
 	 }
 
@@ -543,14 +544,14 @@ static void* hash_create_job(void *args){
 			  - 1) >> ((i + 1) * hash_per_block_bits);
 		 hash_level_size[i] = s;
 		 if ((hash_position + s) < hash_position || (hash_position + s) < 0) {
-			 printf("Device offset overflow 3 : %lld, %lld\n", s, hash_position);
+			 printf("Device offset overflow 3 : %lld, %lld\n", (long long int)s, (long long int)hash_position);
 			 return -EINVAL;
 		 }
 		 hash_position += s;
 	 }
 
 	 if (mult_overflow(&hash_device_size, hash_position, hash_block_size)) {
-		 printf("Device offset overflow 4 : %lld, %d\n", hash_position, hash_block_size);
+		 printf("Device offset overflow 4 : %lld, %d\n", (long long int)hash_position, (int)hash_block_size);
 		 return -EINVAL;
 	 }
 

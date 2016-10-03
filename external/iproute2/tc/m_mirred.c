@@ -62,7 +62,7 @@ char *mirred_n2a(int action)
 }
 
 int
-parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct nlmsghdr *n, int egress)
+parse_egress(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct nlmsghdr *n)
 {
 
 	int argc = *argc_p;
@@ -79,8 +79,7 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 
 		if (matches(*argv, "action") == 0) {
 			break;
-               } else if (matches(*argv, "egress") == 0
-                           || matches(*argv, "ingress") == 0) {
+		} else if (matches(*argv, "egress") == 0) {
 			NEXT_ARG();
 			ok++;
 			continue;
@@ -99,18 +98,16 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 					break;
 				}
 			} else if(!ok) {
-                                if (egress)
-                                      fprintf(stderr, "was expecting egress (%s)\n", *argv);
-                                else
-                                      fprintf(stderr, "was expecting ingress (%s)\n", *argv);
+				fprintf(stderr, "was expecting egress (%s)\n", *argv);
 				break;
+
 			} else if (!mirror && matches(*argv, "mirror") == 0) {
 				mirror=1;
 				if (redir) {
 					fprintf(stderr, "Cant have both mirror and redir\n");
 					return -1;
 				}
-				p.eaction = egress ? TCA_EGRESS_MIRROR : TCA_INGRESS_MIRROR;
+				p.eaction = TCA_EGRESS_MIRROR;
 				p.action = TC_ACT_PIPE;
 				ok++;
 			} else if (!redir && matches(*argv, "redirect") == 0) {
@@ -119,7 +116,7 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 					fprintf(stderr, "Cant have both mirror and redir\n");
 					return -1;
 				}
-				p.eaction = egress ? TCA_EGRESS_REDIR : TCA_INGRESS_REDIR;
+				p.eaction = TCA_EGRESS_REDIR;
 				p.action = TC_ACT_STOLEN;
 				ok++;
 			} else if ((redir || mirror) && matches(*argv, "dev") == 0) {
@@ -128,7 +125,6 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 					duparg("dev", *argv);
 
 				strncpy(d, *argv, sizeof(d)-1);
-				printf("argument is :%s\n",d);
 				argc--;
 				argv++;
 
@@ -159,7 +155,7 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 	}
 
 
-	if (argc && mirror) {
+	if (argc && p.eaction == TCA_EGRESS_MIRROR) {
 
 		if (matches(*argv, "reclassify") == 0) {
 			p.action = TC_POLICE_RECLASSIFY;
@@ -199,7 +195,6 @@ parse_one(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, struct
 	}
 
 	tail = NLMSG_TAIL(n);
-	printf("tca_id :%d p.ifindex:%d\n",tca_id,p.ifindex);
 	addattr_l(n, MAX_MSG, tca_id, NULL, 0);
 	addattr_l(n, MAX_MSG, TCA_MIRRED_PARMS, &p, sizeof (p));
 	tail->rta_len = (void *) NLMSG_TAIL(n) - (void *) tail;
@@ -231,7 +226,7 @@ parse_mirred(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, str
 
 
 	if (matches(*argv, "egress") == 0 || matches(*argv, "index") == 0) {
-		int ret = parse_one(a, &argc, &argv, tca_id, n, 1);
+		int ret = parse_egress(a, &argc, &argv, tca_id, n);
 		if (ret == 0) {
 			*argc_p = argc;
 			*argv_p = argv;
@@ -239,12 +234,7 @@ parse_mirred(struct action_util *a, int *argc_p, char ***argv_p, int tca_id, str
 		}
 
 	} else if (matches(*argv, "ingress") == 0) {
-               int ret = parse_one(a, &argc, &argv, tca_id, n, 0);
-               if (ret == 0) {
-                       *argc_p = argc;
-                       *argv_p = argv;
-                       return 0;
-               }
+		fprintf(stderr,"mirred ingress not supported at the moment\n");
 	} else if (matches(*argv, "help") == 0) {
 		usage();
 	} else {

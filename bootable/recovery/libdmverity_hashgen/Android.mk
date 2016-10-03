@@ -2,6 +2,7 @@
 #
 # Android.mk for adb
 #
+
 LOCAL_PATH:= $(call my-dir)
 
 include $(CLEAR_VARS)
@@ -10,8 +11,8 @@ LOCAL_SRC_FILES := libdmverity_hashgen.c
 
 LOCAL_CFLAGS := -Wall -DPARALLEL_HASH
 
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/..\
-		$(TOP)/external/openssl/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/.. \
+                    external/openssl/include
 #LOCAL_C_INCLUDES += system/extras/ext4_utils
 
 
@@ -29,8 +30,13 @@ LOCAL_CFLAGS += -D__USE_DM_VERITY -g
 
 LOCAL_SRC_FILES := dm_verity_hash.c 
 LOCAL_C_INCLUDES += system/extras/ext4_utils \
-	$(TOP)/external/openssl/include
+                    external/openssl/include
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/..
+
+#ifeq ($(TARGET_SOC),exynos7580)
+LOCAL_CFLAGS += -DEXYNOS_7580
+#LOCAL_CFLAGS += -DUSE_SHA1
+#endif
 
 LOCAL_STATIC_LIBRARIES := \
 	libc \
@@ -40,7 +46,7 @@ LOCAL_STATIC_LIBRARIES := \
 	libdmverity_hashgen \
 	libmincrypt \
 	libcrypto_static_dmverity
-	
+
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/sbin
 include $(BUILD_EXECUTABLE)
 
@@ -52,7 +58,7 @@ LOCAL_SRC_FILES := libdmverity_hashgen.c
 LOCAL_CFLAGS := -Wall
 
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/.. \
-		$(TOP)/external/openssl/include
+                    external/openssl/include
 #LOCAL_C_INCLUDES += system/extras/ext4_utils
 
 LOCAL_MODULE := libdmverity_hashgen_host

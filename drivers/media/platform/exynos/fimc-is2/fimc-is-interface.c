@@ -1386,11 +1386,6 @@ static void wq_func_30c(struct work_struct *data)
 			goto p_err;
 		}
 
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
-			goto p_err;
-		}
-
 		wq_func_frame(leader, subdev, fcount, rcount, status);
 
 p_err:
@@ -1443,11 +1438,6 @@ static void wq_func_30p(struct work_struct *data)
 		leader = subdev->leader;
 		if (!leader) {
 			merr("leader is NULL", device);
-			goto p_err;
-		}
-
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
 			goto p_err;
 		}
 
@@ -1506,11 +1496,6 @@ static void wq_func_31c(struct work_struct *data)
 			goto p_err;
 		}
 
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
-			goto p_err;
-		}
-
 		wq_func_frame(leader, subdev, fcount, rcount, status);
 
 p_err:
@@ -1563,11 +1548,6 @@ static void wq_func_31p(struct work_struct *data)
 		leader = subdev->leader;
 		if (!leader) {
 			merr("leader is NULL", device);
-			goto p_err;
-		}
-
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
 			goto p_err;
 		}
 
@@ -1626,11 +1606,6 @@ static void wq_func_i0c(struct work_struct *data)
 			goto p_err;
 		}
 
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
-			goto p_err;
-		}
-
 		wq_func_frame(leader, subdev, fcount, rcount, status);
 
 p_err:
@@ -1683,11 +1658,6 @@ static void wq_func_i0p(struct work_struct *data)
 		leader = subdev->leader;
 		if (!leader) {
 			merr("leader is NULL", device);
-			goto p_err;
-		}
-
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
 			goto p_err;
 		}
 
@@ -1746,11 +1716,6 @@ static void wq_func_i1c(struct work_struct *data)
 			goto p_err;
 		}
 
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
-			goto p_err;
-		}
-
 		wq_func_frame(leader, subdev, fcount, rcount, status);
 
 p_err:
@@ -1803,11 +1768,6 @@ static void wq_func_i1p(struct work_struct *data)
 		leader = subdev->leader;
 		if (!leader) {
 			merr("leader is NULL", device);
-			goto p_err;
-		}
-
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
 			goto p_err;
 		}
 
@@ -1866,11 +1826,6 @@ static void wq_func_scc(struct work_struct *data)
 			goto p_err;
 		}
 
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
-			goto p_err;
-		}
-
 		wq_func_frame(leader, subdev, fcount, rcount, status);
 
 p_err:
@@ -1923,11 +1878,6 @@ static void wq_func_scp(struct work_struct *data)
 		leader = subdev->leader;
 		if (!leader) {
 			merr("leader is NULL", device);
-			goto p_err;
-		}
-
-		if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-			merr("leader is not start", device);
 			goto p_err;
 		}
 

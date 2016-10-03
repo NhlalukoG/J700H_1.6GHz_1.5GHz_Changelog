@@ -158,6 +158,7 @@ void reactive_active_lists(struct in6_addr *dst, int prefix_len, char *interface
                 inet_ntop(AF_INET6, &route->dst, dst_addr, ADDRSTRLEN); 
                 strcat(dst_addr, "/128");
                 modify_from_rule(g_table_num, "add", dst_addr);
+                modify_from_route(g_table_num, "add", dst_addr,interface);
             }
 
             route->active = 1;
@@ -329,6 +330,7 @@ void* configure_route_to_host(void* p_if_index)
 
     if (!indextoname(sock_fd, if_index, interface)){
         my_syslog(MS_DHCP | LOG_INFO,"failed to convert if index to if name");
+        close(sock_fd);
         return (void*)-1;
     }
 
@@ -337,6 +339,7 @@ void* configure_route_to_host(void* p_if_index)
     fromlen = sizeof(from);
 
     if (update_start_time() < 0) {
+        close(sock_fd);
         free(buffer);
         return (void*)-1;
     }
@@ -350,7 +353,8 @@ void* configure_route_to_host(void* p_if_index)
         if (select(sock_fd+1, &rset, NULL, NULL, &tp) < 0) { 
             if (errno == EINTR) {
                 continue;
-            }   
+            }
+            close(sock_fd);
             free(buffer);
             return (void*)-1;
         }
@@ -369,6 +373,8 @@ void* configure_route_to_host(void* p_if_index)
 
                     if (!indextoname(sock_fd, from.sll_ifindex, interface)){
                         my_syslog(MS_DHCP | LOG_INFO,"failed to convert if index to if name");
+                        close(sock_fd);
+                        free(buffer);
                         return (void*)-1;
                     }
 
@@ -379,6 +385,7 @@ void* configure_route_to_host(void* p_if_index)
 
         if ( gettimeofday(&check_time, NULL) < 0) {
             my_syslog(MS_DHCP | LOG_INFO,"failed to get the current time");
+            close(sock_fd);
             free(buffer);
             return (void*)-1;
         }

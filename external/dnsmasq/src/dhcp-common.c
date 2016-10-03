@@ -450,6 +450,46 @@ void join_multicast(void)
    if (!iface_enumerate(AF_INET6, &count, join_multicast_worker))
      die(_("failed to join DHCPv6 multicast group: %s"), NULL, EC_BADNET);
 }
+
+void iface_join_multicast(const char* params)
+{
+    char if_name[IFNAMSIZ + 1] = {'\0',};
+    char join_str[8] = {'\0',};
+    char* pipe = strchr(params, '|');
+    int join = 0;
+
+    struct ipv6_mreq mreq;
+    unsigned int if_index;
+
+    strncpy(join_str, params, pipe - params);
+    strcpy(if_name, pipe + 1);
+
+    if (!strcmp(join_str, "true")) {
+        join = 1;
+    } else if (!strcmp(join_str, "false")) {
+        join = 0;
+    } else {
+        my_syslog(MS_DHCP | LOG_INFO, "Malformatted msg %s", params);
+        return;
+    }
+
+    if ((if_index = if_nametoindex(if_name)) > 0) {
+        mreq.ipv6mr_interface = if_index;
+        inet_pton(AF_INET6, ALL_RELAY_AGENTS_AND_SERVERS, &mreq.ipv6mr_multiaddr);
+
+        if (daemon->dhcp6 && 
+            setsockopt(daemon->dhcp6fd, IPPROTO_IPV6, join ? IPV6_JOIN_GROUP : IPV6_LEAVE_GROUP, &mreq, sizeof(mreq)) == -1) {
+            if (errno != EADDRINUSE) {
+                my_syslog(MS_DHCP | LOG_INFO, "setsockopt error: %s", strerror(errno));
+                return;
+            }
+        } 
+    } else {
+       my_syslog(MS_DHCP | LOG_INFO, "if_nametoindex error: %s", strerror(errno));
+       return;
+    }
+    my_syslog(MS_DHCP | LOG_INFO, "iface %s joined %s", if_name, ALL_RELAY_AGENTS_AND_SERVERS);
+}
 #endif
 
 #ifdef HAVE_LINUX_NETWORK 

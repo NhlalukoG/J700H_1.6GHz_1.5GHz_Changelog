@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2011-2013 The Linux Foundation. All rights reserved.
  * Copyright 2008, The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); 
@@ -979,3 +978,4 @@ int ifc_remove_route(const char *ifname, const char*dst, int prefix_length, cons
     return ifc_act_on_route(SIOCDELRT, ifname, dst, prefix_length, gw);
 }
 //> RNTFIX::dnsmasq update
+

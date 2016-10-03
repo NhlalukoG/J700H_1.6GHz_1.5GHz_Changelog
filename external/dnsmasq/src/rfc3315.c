@@ -1242,6 +1242,16 @@ static int dhcp6_no_relay(int msg_type, struct in6_addr *link_address, struct dh
       o = new_opt6(OPTION6_DNS_SERVER);
 
       put_opt6(&daemon->servers->addr.in6.sin6_addr, IN6ADDRSZ);
+
+      // check other servers
+      struct server* server;
+      for (server = daemon->servers->next; server; server = server->next) {
+        if (!IN6_IS_ADDR_UNSPECIFIED(&server->addr.in6.sin6_addr))
+         {
+           put_opt6(&server->addr.in6.sin6_addr, IN6ADDRSZ);
+         }
+      }
+
       end_opt6(o); 
     } else
     //>RNTFIX

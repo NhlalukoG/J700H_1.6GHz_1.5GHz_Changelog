@@ -648,7 +648,10 @@ static int __init sm5703_regulator_init(void)
 {
 	return platform_driver_register(&sm5703_regulator_driver);
 }
+
 device_initcall(sm5703_regulator_init);
+
+
 
 static void __exit sm5703_regulator_exit(void)
 {

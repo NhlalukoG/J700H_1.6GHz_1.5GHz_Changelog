@@ -227,7 +227,11 @@ static int send_ra(int iface, char *iface_name, struct in6_addr *dest)
   struct dhcp_netid iface_id;
   struct dhcp_opt *opt_cfg;
   int done_dns = 0;
- 
+  struct server *serv;
+  char addr6_str[40];
+  int has_ipv6_addr;
+  struct in6_addr st_addr6;
+
   save_counter(0);
   ra = expand(sizeof(struct ra_packet));
 
@@ -299,7 +303,7 @@ static int send_ra(int iface, char *iface_name, struct in6_addr *dest)
       put_opt6_char(ICMP6_OPT_RDNSS);
       put_opt6_char((opt_cfg->len/8) + 1);
       put_opt6_short(0);
-      put_opt6_long(1800); /* lifetime - twice RA retransmit */
+      put_opt6_long(3600); /* lifetime - twice RA retransmit */
       /* zero means "self" */
       for (i = 0; i < opt_cfg->len; i += IN6ADDRSZ, a++)
         if (IN6_IS_ADDR_UNSPECIFIED(a))
@@ -315,14 +319,14 @@ static int send_ra(int iface, char *iface_name, struct in6_addr *dest)
 	  put_opt6_char(ICMP6_OPT_DNSSL);
 	  put_opt6_char(len + 1);
 	  put_opt6_short(0);
-	  put_opt6_long(1800); /* lifetime - twice RA retransmit */
+	  put_opt6_long(3600); /* lifetime - twice RA retransmit */
 	  put_opt6(opt_cfg->val, opt_cfg->len);
 	  
 	  /* pad */
 	  for (i = opt_cfg->len; i < len * 8; i++)
 	    put_opt6_char(0);
 	}
-    }
+  }
 	
   if (!done_dns)
     {
@@ -330,9 +334,30 @@ static int send_ra(int iface, char *iface_name, struct in6_addr *dest)
       put_opt6_char(ICMP6_OPT_RDNSS);
       put_opt6_char(3);
       put_opt6_short(0);
-      put_opt6_long(1800); /* lifetime - twice RA retransmit */
-      put_opt6(&parm.link_local, IN6ADDRSZ);
+      put_opt6_long(3600); /* lifetime - twice RA retransmit */
 
+      has_ipv6_addr = 0;
+      if(daemon->servers != NULL)
+      {
+        for (serv = daemon->servers; serv;)
+	    {
+	      if(serv->addr.sa.sa_family == AF_INET6 && !IN6_IS_ADDR_UNSPECIFIED(&serv->addr.in6.sin6_addr) && !IN6_IS_ADDR_LINKLOCAL(&serv->addr.in6.sin6_addr))
+	      {
+	        my_syslog(LOG_INFO, _("v6 dns server : %s"), inet_ntop(AF_INET6, (void *)&serv->addr.in6.sin6_addr, addr6_str, 40));
+	        put_opt6(&serv->addr.in6.sin6_addr, IN6ADDRSZ);
+	        has_ipv6_addr = 1;
+	        break;
+	      }
+	      serv = serv->next;
+	    }
+      }
+
+      if(has_ipv6_addr == 0)
+      {
+        my_syslog(LOG_INFO, _("send_ra() : daemon->servers is null or global ipv6 addr does not exist or invalid ipv6 addr"));
+        inet_pton(AF_INET6, "2001:4860:4860:0:0:0:0:8888", (void *)&st_addr6); // google default dns server
+        put_opt6(&st_addr6, IN6ADDRSZ);
+      }
     }
 
   /* set managed bits unless we're providing only RA on this link */

@@ -1546,13 +1546,11 @@ int fimc_is_group_stop(struct fimc_is_groupmgr *groupmgr,
 	int ret = 0;
 	int errcnt = 0;
 	int retry;
-	u32 rcount, pcount, entry;
+	u32 rcount, pcount;
 	unsigned long flags;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_device_sensor *sensor;
-	struct fimc_is_group *child;
-	struct fimc_is_subdev *subdev;
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -1564,10 +1562,6 @@ int fimc_is_group_stop(struct fimc_is_groupmgr *groupmgr,
 	device = group->device;
 	sensor = device->sensor;
 	framemgr = GET_SUBDEV_FRAMEMGR(&group->leader);
-	if (!framemgr) {
-		mgerr("framemgr is NULL", group, group);
-		goto p_err;
-	}
 
 	if (!test_bit(FIMC_IS_GROUP_START, &group->state)) {
 		mwarn("already group stop", group);
@@ -1623,17 +1617,6 @@ int fimc_is_group_stop(struct fimc_is_groupmgr *groupmgr,
 	framemgr_e_barrier_irqs(framemgr, FMGR_IDX_21, flags);
 	framemgr_x_barrier_irqr(framemgr, FMGR_IDX_21, flags);
 
-	retry = 150;
-	while (--retry && test_bit(FIMC_IS_GROUP_SHOT, &group->state)) {
-		mgwarn(" thread stop waiting...", device, group);
-		msleep(20);
-	}
-
-	if (!retry) {
-		mgerr(" waiting(until thread stop) is fail", device, group);
-		errcnt++;
-	}
-
 	if (test_bit(FIMC_IS_GROUP_FORCE_STOP, &group->state)) {
 		ret = fimc_is_itf_force_stop(device, GROUP_ID(group->id));
 		if (ret) {
@@ -1648,36 +1631,32 @@ int fimc_is_group_stop(struct fimc_is_groupmgr *groupmgr,
 		}
 	}
 
+	retry = 150;
+	while (--retry && framemgr->frame_pro_cnt) {
+		mgwarn(" %d pros waiting...", device, group, framemgr->frame_pro_cnt);
+		msleep(20);
+	}
+
+	if (!retry) {
+		mgerr(" waiting(until process empty) is fail", device, group);
+		errcnt++;
+	}
+
 	rcount = atomic_read(&group->rcount);
 	if (rcount) {
 		mgerr(" request is NOT empty(%d)", device, group, rcount);
 		errcnt++;
 	}
 
-	child = group;
-	while(child) {
-		for (entry = ENTRY_3AA; entry < ENTRY_END; ++entry) {
-			subdev = child->subdev[entry];
-			if (subdev && subdev->vctx && test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-				framemgr = GET_SUBDEV_FRAMEMGR(subdev);
-				if (!framemgr) {
-					mgerr("framemgr is NULL", group, group);
-					goto p_err;
-				}
+	retry = 150;
+	while (--retry && test_bit(FIMC_IS_GROUP_SHOT, &group->state)) {
+		mgwarn(" thread stop waiting...", device, group);
+		msleep(20);
+	}
 
-				retry = 150;
-				while (--retry && framemgr->frame_pro_cnt) {
-					mgwarn(" subdev stop waiting...", device, group);
-					msleep(20);
-				}
-
-				if (!retry) {
-					mgerr(" waiting(subdev stop) is fail", device, group);
-					errcnt++;
-				}
-			}
-		}
-		child = child->child;
+	if (!retry) {
+		mgerr(" waiting(until thread stop) is fail", device, group);
+		errcnt++;
 	}
 
 	fimc_is_gframe_flush(groupmgr, group);

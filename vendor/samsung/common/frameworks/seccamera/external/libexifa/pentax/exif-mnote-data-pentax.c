@@ -309,7 +309,7 @@ exif_mnote_data_pentax_load (ExifMnoteData *en,
 				(dataofs + s > buf_size)) {
 				exif_log (en->log, EXIF_LOG_CODE_DEBUG,
 						  "ExifMnoteDataPentax", "Tag data past end "
-					  "of buffer (%u > %u)", dataofs + s, buf_size);
+					  "of buffer (%zu > %u)", dataofs + s, buf_size); /* Fix 64bit build warning. 2015.03.26 - Samsung Electronics */
 				continue;
 			}
 
